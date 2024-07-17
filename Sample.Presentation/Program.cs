@@ -1,13 +1,33 @@
+using Sample.Presentation;
+using Sample.Application;
+using Sample.Infrastructure.Persistence;
+using Sample.Application.Common.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+builder.Services.RegisterApplicationServices();
+builder.Services.RegisterInfrastructureServices(builder.Configuration);
+builder.Services.RegisterPresentationServices();
+
+// Add logger
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+
+using var scope = app.Services.CreateScope();
+{
+    var dbInitializerService = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    await dbInitializerService.InitialDb();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -16,10 +36,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
